@@ -69,7 +69,7 @@ export function SettingsDialog({
           </div>
           <div className="settings-row">
             <span><Github size={18} /></span>
-            <div><strong>开源许可</strong><small>MIT License · 课迹 0.1.0</small></div>
+            <div><strong>开源许可</strong><small>MIT License · 课迹 0.1.1</small></div>
           </div>
         </div>
 

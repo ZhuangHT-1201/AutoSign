@@ -98,7 +98,7 @@ public class CampusAuthActivity extends AppCompatActivity {
         settings.setAllowFileAccessFromFileURLs(false);
         settings.setAllowUniversalAccessFromFileURLs(false);
         settings.setSaveFormData(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " Classmark/0.1.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " Classmark/0.1.1");
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
         cookies.setAcceptThirdPartyCookies(webView, true);

@@ -11,6 +11,7 @@ import {
   selectedWeek,
 } from '../src/lib/parsers';
 import { fromWebVpnUrl, isWebVpnUrl, toWebVpnUrl } from '../src/lib/webvpn';
+import { connectionModeFromProbe } from '../src/lib/connection';
 
 describe('schedule parsers', () => {
   it('normalizes terms and keeps the selected term first', () => {
@@ -129,5 +130,34 @@ describe('WebVPN URL conversion', () => {
     expect(fromWebVpnUrl(wrapped)).toBe(
       'https://iclass.buaa.edu.cn:8347/app/course/list.action?x=1',
     );
+  });
+});
+
+describe('connection auto-detection', () => {
+  it('treats an SSO redirect as direct portal reachability', () => {
+    expect(
+      connectionModeFromProbe(
+        200,
+        'https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fbyxt.buaa.edu.cn',
+      ),
+    ).toBe('direct');
+  });
+
+  it('does not mistake the old 404 response for a usable direct portal', () => {
+    expect(
+      connectionModeFromProbe(
+        404,
+        'https://byxt.buaa.edu.cn/jwapp/sys/homeapp/api/home/currentUser.do',
+      ),
+    ).toBe('webvpn');
+  });
+
+  it('accepts an authentication-required response from the direct portal', () => {
+    expect(
+      connectionModeFromProbe(
+        401,
+        'https://byxt.buaa.edu.cn/jwapp/sys/homeapp/api/home/currentUser.do',
+      ),
+    ).toBe('direct');
   });
 });

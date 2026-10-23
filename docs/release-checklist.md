@@ -20,9 +20,9 @@
 ## Git 标签
 
 ```bash
-git tag -a v0.1.0 -m "课迹 0.1.0"
+git tag -a v0.1.1 -m "课迹 0.1.1"
 git push origin main
-git push origin v0.1.0
+git push origin v0.1.1
 ```
 
 标签推送后，仓库中的 Release workflow 会生成 Windows 安装包和 Android 调试 APK。正式 Android 发布包需要另行签名。

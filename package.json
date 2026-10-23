@@ -1,6 +1,6 @@
 {
   "name": "classmark",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "课迹 - 一个无需自建服务器的课表与课堂签到客户端",
   "author": "Huiteng Zhuang",

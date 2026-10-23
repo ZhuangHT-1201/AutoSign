@@ -28,9 +28,11 @@ import {
   selectedWeek,
 } from '../lib/parsers';
 import { toCompactDate, toIsoDate } from '../lib/date';
+import { connectionModeFromProbe } from '../lib/connection';
 import { toWebVpnUrl } from '../lib/webvpn';
 
 const BYXT_BASE = 'https://byxt.buaa.edu.cn/jwapp/sys/homeapp';
+const SSO_BASE = 'https://sso.buaa.edu.cn';
 const ICASS_BASE = 'https://iclass.buaa.edu.cn';
 const GSMIS_BASE = 'https://gsmis.buaa.edu.cn/gsapp/sys/wdkbapp';
 const UC_BASE = 'https://uc.buaa.edu.cn';
@@ -133,16 +135,11 @@ export class CampusService {
     try {
       const response = await bridgeRequest({
         url: `${BYXT_BASE}/api/home/currentUser.do`,
-        method: 'HEAD',
-        timeoutMs: 4_000,
-        redirect: false,
+        method: 'GET',
+        timeoutMs: 6_000,
+        redirect: true,
       });
-      this.mode =
-        (response.status >= 200 && response.status < 400) ||
-        response.status === 401 ||
-        response.status === 403
-          ? 'direct'
-          : 'webvpn';
+      this.mode = connectionModeFromProbe(response.status, response.url);
     } catch {
       this.mode = 'webvpn';
     }
@@ -164,7 +161,11 @@ export class CampusService {
 
   async connect(preference: ConnectionMode): Promise<CampusSession> {
     const mode = await this.resolveMode(preference);
-    const startUrl = this.upstream(`${BYXT_BASE}/index.html`);
+    const serviceUrl = `${BYXT_BASE}/index.do`;
+    const startUrl =
+      mode === 'direct'
+        ? `${SSO_BASE}/login?service=${encodeURIComponent(serviceUrl)}`
+        : this.upstream(serviceUrl);
     const result = await openOfficialAuth({
       startUrl,
       successMarkers: [

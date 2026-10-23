@@ -203,7 +203,7 @@ public class CampusBridgePlugin extends Plugin {
             connection.setRequestProperty(
                 "User-Agent",
                 "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 " +
-                    "(KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36 Classmark/0.1.0"
+                    "(KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36 Classmark/0.1.1"
             );
             String cookies = cookieManager.getCookie(currentUrl);
             if (!isBlank(cookies)) {
