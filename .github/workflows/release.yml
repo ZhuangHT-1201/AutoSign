@@ -21,7 +21,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build:desktop
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: classmark-windows
           path: release/*.exe
@@ -46,7 +46,7 @@ jobs:
       - run: npx cap sync android
       - run: chmod +x android/gradlew
       - run: cd android && ./gradlew assembleDebug --no-daemon
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: classmark-android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
