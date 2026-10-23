@@ -1,0 +1,30 @@
+name: 功能建议
+description: 提议新的使用体验或能力
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 请描述当前体验中的具体不便。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 可选方案
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 使用边界
+      options:
+        - label: 该功能不涉及代签、虚拟定位或绕过学校系统校验。
+          required: true
