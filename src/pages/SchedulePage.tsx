@@ -56,9 +56,8 @@ export function SchedulePage({
     <div className="page page--schedule">
       <header className="page-heading">
         <div>
-          <p className="page-heading__date">MY TIMETABLE</p>
           <h1>课程表</h1>
-          <p className="page-heading__sub">从一周的全局视角，安排今天的专注。</p>
+          <p className="page-heading__sub">本周课程安排</p>
         </div>
         <div className="heading-actions">
           <select

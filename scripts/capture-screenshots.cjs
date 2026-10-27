@@ -60,17 +60,15 @@ app.whenReady().then(async () => {
       backgroundThrottling: false,
     },
   });
-  win.setOpacity(0);
   win.showInactive();
   await win.loadFile(path.join(root, 'dist', 'index.html'));
   await win.webContents.executeJavaScript('localStorage.clear()');
   win.reload();
   await wait(650);
-  win.setOpacity(1);
   await stabilize(win);
   await capture(win, 'login-desktop.png');
 
-  if (!(await clickByText(win, '先看看演示界面'))) throw new Error('Demo button not found');
+  if (!(await clickByText(win, '演示模式'))) throw new Error('Demo button not found');
   await wait(700);
   await stabilize(win);
   await wait(120);

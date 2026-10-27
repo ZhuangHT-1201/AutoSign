@@ -55,6 +55,8 @@ interface SigninSession {
   sessionId: string;
 }
 
+type SigninTransport = 'direct' | 'webvpn';
+
 export class CampusError extends Error {
   readonly kind: 'auth' | 'network' | 'data' | 'permission' | 'unknown';
 
@@ -89,6 +91,7 @@ export class CampusService {
   mode: ResolvedConnectionMode | null = null;
   source: ScheduleSource | null = null;
   private signinSession: SigninSession | null = null;
+  private signinTransport: SigninTransport | null = null;
   private termCache = new Map<string, Week[]>();
   private graduateCourseCache = new Map<string, Course[]>();
   private graduateStarts = new Map<string, Date>();
@@ -198,6 +201,7 @@ export class CampusService {
     this.mode = mode;
     this.source = null;
     this.signinSession = null;
+    this.signinTransport = null;
     this.termCache.clear();
     this.graduateCourseCache.clear();
     this.graduateStarts.clear();
@@ -527,41 +531,76 @@ export class CampusService {
 
   async loadSignins(): Promise<SigninClass[]> {
     const session = await this.ensureSigninSession();
-    const response = await this.request({
+    const transport = this.signinTransport ?? (this.mode === 'webvpn' ? 'webvpn' : 'direct');
+    const response = await this.requestSignin({
       url: `${ICASS_BASE}:8347/app/course/get_stu_course_sched.action?id=${encodeURIComponent(session.userId)}&dateStr=${toCompactDate(new Date())}`,
       headers: { sessionId: session.sessionId },
-    });
+    }, transport);
     if (looksLikeLoginPage(response.body, response.url)) {
       this.signinSession = null;
-      return [];
+      this.signinTransport = null;
+      throw new CampusError('课堂服务登录已失效，请刷新重试。', 'auth');
     }
-    try {
-      return parseSigninClasses(parseJsonPayload(response.body));
-    } catch {
-      return [];
+    const payload = parseJsonPayload(response.body);
+    const status = String(payload.STATUS ?? '').toLowerCase();
+    if (status && !['0', '200', 'success'].includes(status)) {
+      throw new CampusError(
+        typeof payload.ERRMSG === 'string' && payload.ERRMSG.trim()
+          ? payload.ERRMSG
+          : '课堂服务返回错误。',
+        'permission',
+      );
     }
+    return parseSigninClasses(payload);
   }
 
   private async ensureSigninSession(): Promise<SigninSession> {
     if (this.signinSession) return this.signinSession;
-    const rawEntry = `${ICASS_BASE}:8346/?type=jumpMyCenter`;
-    const entry = await this.request({
-      url: rawEntry,
-      headers: {
-        Accept: 'text/html,application/xhtml+xml',
+    const transports: SigninTransport[] =
+      this.mode === 'webvpn' ? ['webvpn', 'direct'] : ['direct', 'webvpn'];
+    let lastError: CampusError | null = null;
+    for (const transport of transports) {
+      try {
+        const session = await this.loginSignin(transport);
+        this.signinSession = session;
+        this.signinTransport = transport;
+        return session;
+      } catch (error) {
+        lastError =
+          error instanceof CampusError
+            ? error
+            : new CampusError(messageForError(error), 'network');
+      }
+    }
+    throw new CampusError(
+      lastError?.message || '无法连接课堂服务。',
+      lastError?.kind || 'network',
+    );
+  }
+
+  private async loginSignin(transport: SigninTransport): Promise<SigninSession> {
+    const entry = await this.requestSignin(
+      {
+        url: `${ICASS_BASE}:8346/?type=jumpMyCenter`,
+        headers: {
+          Accept: 'text/html,application/xhtml+xml',
+        },
       },
-    });
+      transport,
+    );
     const loginName = parseSigninLoginName(entry.url);
     if (!loginName) {
-      throw new CampusError('课堂服务尚未完成授权，请重新登录后再试。', 'auth');
+      throw new CampusError('课堂服务未返回登录凭据。', 'auth');
     }
     const loginUrl = `${ICASS_BASE}:8347/app/user/login.action?password=&phone=${encodeURIComponent(loginName)}&userLevel=1&verificationType=2&verificationUrl=`;
-    const login = await this.request({ url: loginUrl });
+    const login = await this.requestSignin({ url: loginUrl }, transport);
     const payload = parseJsonPayload(login.body);
     const status = String(payload.STATUS ?? '').toLowerCase();
     if (status && !['0', '200', 'success'].includes(status)) {
       throw new CampusError(
-        typeof payload.ERRMSG === 'string' ? payload.ERRMSG : '课堂服务登录失败，请在官网检查账号状态。',
+        typeof payload.ERRMSG === 'string' && payload.ERRMSG.trim()
+          ? payload.ERRMSG
+          : '课堂服务登录失败。',
         'permission',
       );
     }
@@ -569,28 +608,59 @@ export class CampusService {
     const userId = String(result?.id ?? '');
     const sessionId = String(result?.sessionId ?? '');
     if (!userId || !sessionId) {
-      throw new CampusError('课堂服务没有返回有效会话，请重新登录。', 'auth');
+      throw new CampusError('课堂服务没有返回有效会话。', 'auth');
     }
-    this.signinSession = { userId, sessionId };
-    return this.signinSession;
+    const timestampUrl =
+      transport === 'webvpn'
+        ? `${ICASS_BASE}:8347/app/common/get_timestamp.action`
+        : 'http://iclass.buaa.edu.cn:8081/app/common/get_timestamp.action';
+    const timestampResponse = await this.requestSignin({ url: timestampUrl }, transport);
+    const timestamp = String(parseJsonPayload(timestampResponse.body).timestamp ?? '');
+    if (!timestamp) {
+      throw new CampusError('课堂服务时间接口异常。', 'data');
+    }
+    return { userId, sessionId };
+  }
+
+  private async requestSignin(
+    input: BridgeRequestInput,
+    transport: SigninTransport,
+  ): Promise<BridgeResponse> {
+    const url = transport === 'webvpn' ? toWebVpnUrl(input.url) : input.url;
+    try {
+      const response = await bridgeRequest({
+        timeoutMs: transport === 'direct' ? 8_000 : 12_000,
+        redirect: true,
+        ...input,
+        url,
+      });
+      if (response.status >= 400) {
+        throw new CampusError(`课堂服务返回 HTTP ${response.status}。`, 'network');
+      }
+      return response;
+    } catch (error) {
+      if (error instanceof CampusError) throw error;
+      throw new CampusError(messageForError(error), 'network');
+    }
   }
 
   async signIn(courseId: string): Promise<{ success: boolean; message: string }> {
     const session = await this.ensureSigninSession();
+    const transport = this.signinTransport ?? (this.mode === 'webvpn' ? 'webvpn' : 'direct');
     const timestampUrl =
-      this.mode === 'webvpn'
+      transport === 'webvpn'
         ? `${ICASS_BASE}:8347/app/common/get_timestamp.action`
         : `http://iclass.buaa.edu.cn:8081/app/common/get_timestamp.action`;
-    const timestampResponse = await this.request({ url: timestampUrl });
+    const timestampResponse = await this.requestSignin({ url: timestampUrl }, transport);
     const timestampPayload = parseJsonPayload(timestampResponse.body);
     const timestamp = String(timestampPayload.timestamp ?? '');
     if (!timestamp) throw new CampusError('未获取到签到服务器时间。', 'data');
 
     const actionUrl =
-      this.mode === 'webvpn'
+      transport === 'webvpn'
         ? `${ICASS_BASE}:8347/app/course/stu_scan_sign.action?courseSchedId=${encodeURIComponent(courseId)}&timestamp=${encodeURIComponent(timestamp)}`
         : `http://iclass.buaa.edu.cn:8081/eschool/app/course/stu_scan_sign.action?courseSchedId=${encodeURIComponent(courseId)}&timestamp=${encodeURIComponent(timestamp)}`;
-    const action = await this.request({
+    const action = await this.requestSignin({
       url: actionUrl,
       method: 'POST',
       headers: {
@@ -598,7 +668,7 @@ export class CampusService {
         sessionId: session.sessionId,
       },
       body: new URLSearchParams({ id: session.userId }).toString(),
-    });
+    }, transport);
     return parseSigninAction(parseJsonPayload(action.body));
   }
 

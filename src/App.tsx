@@ -14,7 +14,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { Logo } from './components/Logo';
 import { SettingsDialog } from './components/SettingsDialog';
 import { Toast, type ToastState } from './components/Toast';
-import { isNativeShell, platformLabel } from './lib/bridge';
+import { platformLabel } from './lib/bridge';
 import { createDemoData } from './lib/demo';
 import {
   clearLocalData,
@@ -236,7 +236,7 @@ export default function App() {
     setError('');
     setView('overview');
     setPhase('workspace');
-    showToast('已进入演示界面，数据仅用于预览', 'info');
+    showToast('演示模式', 'info');
   };
 
   const handleOffline = () => {
@@ -451,7 +451,7 @@ export default function App() {
           canOpenOffline={Boolean(cachedSchedule)}
           offlineProfile={cacheProfile}
           busy={busy}
-          error={error || (isNativeShell() ? '' : '当前为浏览器预览；可以进入演示模式，真实登录请使用桌面端或安卓端。')}
+          error={error}
           platform={platformLabel()}
         />
         <Toast toast={toast} onClose={() => setToast(null)} />
@@ -544,7 +544,7 @@ export default function App() {
         </nav>
 
         <div className="sidebar__focus">
-          <span>THIS WEEK</span>
+          <span>本周</span>
           <strong>{currentWeek?.name ?? '本周'}</strong>
           <p>{courses.length ? `已安排 ${courses.length} 节课程` : '还没有课程安排'}</p>
           <div className="focus-dots">

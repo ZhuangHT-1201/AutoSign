@@ -1,12 +1,10 @@
 import {
   ArrowRight,
   CalendarDays,
-  Check,
   Clock3,
   Compass,
   MapPin,
   RefreshCw,
-  ShieldCheck,
   Sparkles,
   TimerReset,
 } from 'lucide-react';
@@ -80,7 +78,7 @@ export function OverviewPage({
           <p className="page-heading__date">{formatFullDate(now)}</p>
           <h1>{greeting()}，{profile?.displayName ?? '同学'}</h1>
           <p className="page-heading__sub">
-            {dayCourses.length ? `今天有 ${dayCourses.length} 节课，按自己的节奏来。` : '今天没有排课，留一点时间给自己。'}
+            {dayCourses.length ? `今天有 ${dayCourses.length} 节课` : '今天没有课程'}
           </p>
         </div>
         <div className="heading-actions">
@@ -101,7 +99,7 @@ export function OverviewPage({
             <Sparkles size={15} />
             {week?.name ?? '本周'} · {week ? formatMonthDay(parseLocalDate(week.startDate)) : formatMonthDay(now)}
           </div>
-          <h2>{next ? '接下来，专注这一节' : '今天的安排已完成'}</h2>
+          <h2>{next ? '下一节课' : dayCourses.length ? '今日课程已结束' : '今天没有课程'}</h2>
           {next ? (
             <button className="hero-course" onClick={() => onCourseClick(next)}>
               <span className="hero-course__time">
@@ -117,12 +115,7 @@ export function OverviewPage({
               </span>
               <ArrowRight size={19} className="hero-course__arrow" />
             </button>
-          ) : (
-            <div className="hero-empty">
-              <Check size={22} />
-              <div><strong>今天没有待上课程</strong><span>下一段日程由你安排</span></div>
-            </div>
-          )}
+          ) : null}
         </div>
         <aside className="timeline-hero__aside">
           <div className="day-ring" style={{ '--progress': `${dayProgress * 3.6}deg` } as React.CSSProperties}>
@@ -145,7 +138,7 @@ export function OverviewPage({
         <article className="stat-card">
           <span className="stat-card__icon stat-card__icon--blue"><Clock3 size={20} /></span>
           <div><small>今日课堂</small><strong>{Math.floor(totalMinutes / 60)}<em> 小时</em> {totalMinutes % 60}<em> 分</em></strong></div>
-          <span className="stat-card__caption">专注时间</span>
+          <span className="stat-card__caption">课堂时长</span>
         </article>
         <article className="stat-card">
           <span className="stat-card__icon stat-card__icon--orange"><TimerReset size={20} /></span>
@@ -189,7 +182,7 @@ export function OverviewPage({
         <aside className="side-stack">
           <section className="surface-card signin-mini">
             <header className="section-heading">
-              <div><span>课堂签到</span><small>来自学校课堂系统</small></div>
+              <div><span>课堂签到</span></div>
               <span className={`status-dot-label ${pending.length ? 'status-dot-label--warm' : ''}`}>
                 <i /> {pending.length ? `${pending.length} 待签到` : '状态正常'}
               </span>
@@ -199,20 +192,15 @@ export function OverviewPage({
                 <div className="signin-mini__mark"><MapPin size={22} /></div>
                 <div>
                   <strong>{pending[0]?.courseName ?? signins[0].courseName}</strong>
-                  <p>{pending.length ? `${pending[0].beginTime} — ${pending[0].endTime} · 请在规定范围内完成` : '今天的签到已经全部完成'}</p>
+                  <p>{pending.length ? `${pending[0].beginTime} — ${pending[0].endTime}` : '签到已完成'}</p>
                 </div>
               </div>
             ) : (
-              <div className="signin-mini__empty">今天的签到课程还未发布</div>
+              <div className="signin-mini__empty">暂无签到课程</div>
             )}
             <button className="wide-quiet-button" onClick={() => onNavigate('attendance')}>
               查看全部签到 <ArrowRight size={15} />
             </button>
-          </section>
-
-          <section className="privacy-card">
-            <span><ShieldCheck size={20} /></span>
-            <div><strong>本地优先</strong><p>会话与课表缓存保留在你的设备上，没有中转服务器。</p></div>
           </section>
         </aside>
       </div>

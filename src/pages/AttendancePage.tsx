@@ -1,11 +1,9 @@
 import {
   Check,
   CheckCircle2,
-  Clock3,
   LoaderCircle,
   MapPin,
   RefreshCw,
-  ShieldCheck,
   TimerReset,
 } from 'lucide-react';
 import type { SigninClass } from '../types';
@@ -37,9 +35,8 @@ export function AttendancePage({
     <div className="page page--attendance">
       <header className="page-heading">
         <div>
-          <p className="page-heading__date">CLASS CHECK-IN</p>
           <h1>课堂签到</h1>
-          <p className="page-heading__sub">{formatFullDate(new Date())} · 状态由学校课堂系统实时返回</p>
+          <p className="page-heading__sub">{formatFullDate(new Date())}</p>
         </div>
         <button className="refresh-button" onClick={onRefresh} disabled={loading || offline}>
           <RefreshCw size={17} className={loading ? 'spin' : ''} />
@@ -53,7 +50,6 @@ export function AttendancePage({
           <div>
             <p>今日签到</p>
             <h2>{pending.length ? `还有 ${pending.length} 节课待处理` : signins.length ? '全部签到已完成' : '签到课程尚未发布'}</h2>
-            <span>请在规定时间和范围内完成签到，系统会校验你的实际位置。</span>
           </div>
         </div>
         <div className="attendance-summary__stats">
@@ -65,8 +61,7 @@ export function AttendancePage({
         </div>
       </section>
 
-      <div className="attendance-columns">
-        <section className="surface-card attendance-list-card">
+      <section className="surface-card attendance-list-card attendance-list-card--wide">
           <header className="section-heading">
             <div><span>今日课堂</span><small>{signins.length} 条签到记录</small></div>
             <span className="live-label"><i /> 实时状态</span>
@@ -74,18 +69,17 @@ export function AttendancePage({
 
           {offline ? (
             <div className="attendance-empty">
-              <span><ShieldCheck size={27} /></span>
-              <h3>离线状态无法签到</h3>
-              <p>重新连接校园账号后即可刷新课堂状态并完成签到。</p>
+              <span><RefreshCw size={27} /></span>
+              <h3>离线模式不可签到</h3>
             </div>
           ) : loading && !signins.length ? (
-            <div className="attendance-empty"><LoaderCircle className="spin" size={26} /><h3>正在查询签到课程</h3><p>请稍候，正在连接课堂服务。</p></div>
+            <div className="attendance-empty"><LoaderCircle className="spin" size={26} /><h3>正在查询签到课程</h3></div>
           ) : error && !signins.length ? (
             <div className="attendance-empty">
-              <span><ShieldCheck size={27} /></span>
-              <h3>签到状态暂时不可用</h3>
+              <span><RefreshCw size={27} /></span>
+              <h3>无法获取签到</h3>
               <p>{error}</p>
-              <button className="wide-quiet-button" onClick={onRefresh}>重试连接 <RefreshCw size={14} /></button>
+              <button className="wide-quiet-button" onClick={onRefresh}>重试 <RefreshCw size={14} /></button>
             </div>
           ) : signins.length ? (
             <div className="attendance-items">
@@ -102,8 +96,8 @@ export function AttendancePage({
                     <strong>{item.courseName}</strong>
                     <p>
                       {item.status === 1
-                        ? '签到成功，状态已同步'
-                        : '当前开放签到，请在教室内完成操作'}
+                        ? '签到成功'
+                        : '未签到'}
                     </p>
                   </div>
                   {item.status === 1 ? (
@@ -125,28 +119,10 @@ export function AttendancePage({
             <div className="attendance-empty">
               <span><TimerReset size={27} /></span>
               <h3>今天暂无签到课程</h3>
-              <p>老师发布签到后，刷新这里即可看到。</p>
-              <button className="wide-quiet-button" onClick={onRefresh}>重新查询 <RefreshCw size={14} /></button>
+              <button className="wide-quiet-button" onClick={onRefresh}>刷新 <RefreshCw size={14} /></button>
             </div>
           )}
-        </section>
-
-        <aside className="attendance-aside">
-          <section className="checkin-tip">
-            <span><ShieldCheck size={22} /></span>
-            <h3>签到小提示</h3>
-            <ul>
-              <li><Clock3 size={15} /> 仅在课堂开放时段内操作</li>
-              <li><MapPin size={15} /> 请处于老师设置的位置范围</li>
-              <li><RefreshCw size={15} /> 若失败，刷新后再次确认状态</li>
-            </ul>
-          </section>
-          <section className="policy-note">
-            <span>合规使用</span>
-            <p>本功能仅代你向学校课堂服务提交本人签到，不提供代签、虚拟定位或绕过校验的能力。</p>
-          </section>
-        </aside>
-      </div>
+      </section>
     </div>
   );
 }
