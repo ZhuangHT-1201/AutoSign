@@ -23,7 +23,7 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
-    "@capacitor/android": "^7.4.3",
+    "@capacitor/android": "^8.5.3",
     "@capacitor/core": "^7.4.3",
     "crypto-js": "^4.2.0",
     "lucide-react": "^0.468.0",
